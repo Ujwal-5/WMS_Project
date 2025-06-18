@@ -1,0 +1,539 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Analytics Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .analytics-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+    }
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .metric-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        border-left: 4px solid #667eea;
+        transition: transform 0.2s ease;
+    }
+    .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+    .metric-icon {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        color: white;
+        font-size: 1.5rem;
+    }
+    .metric-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #667eea;
+        margin-bottom: 0.5rem;
+    }
+    .metric-label {
+        color: #6c757d;
+        font-size: 1rem;
+        font-weight: 500;
+    }
+    .metric-change {
+        font-size: 0.8rem;
+        margin-top: 0.5rem;
+    }
+    .metric-change.positive {
+        color: #28a745;
+    }
+    .metric-change.negative {
+        color: #dc3545;
+    }
+    .chart-container {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+    }
+    .chart-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+    .chart-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+    @media (max-width: 992px) {
+        .chart-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    .data-table-container {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+    }
+    .table-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+    }
+    .table-title i {
+        margin-right: 0.5rem;
+        color: #667eea;
+    }
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .data-table th {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: #495057;
+        border-bottom: 2px solid #dee2e6;
+    }
+    .data-table td {
+        padding: 1rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .data-table tr:hover {
+        background-color: #f8f9fa;
+    }
+    .revenue-amount {
+        font-weight: bold;
+        color: #28a745;
+    }
+    .no-data {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+    }
+    .no-data i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        color: #dee2e6;
+    }
+    .loading-spinner {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 300px;
+    }
+    .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .refresh-btn {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: none;
+        border: none;
+        color: #667eea;
+        font-size: 1.2rem;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 50%;
+        transition: background-color 0.2s ease;
+    }
+    .refresh-btn:hover {
+        background-color: #f8f9fa;
+    }
+    .date-range-selector {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+    }
+    .export-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    .export-btn {
+        padding: 0.5rem 1rem;
+        border: 1px solid #667eea;
+        background: white;
+        color: #667eea;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+    }
+    .export-btn:hover {
+        background: #667eea;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="analytics-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-2">
+                    <i class="fas fa-chart-line me-3"></i>Analytics Dashboard
+                </h1>
+                <p class="mb-0 opacity-75">Comprehensive sales analytics and business insights</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <button class="btn btn-outline-light" onclick="refreshData()">
+                    <i class="fas fa-sync-alt me-2"></i>Refresh Data
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Key Metrics -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-icon">
+                <i class="fas fa-shopping-cart"></i>
+            </div>
+            <div class="metric-number" id="totalOrders">
+                {% if daily_sales %}
+                    {{ daily_sales|length }}
+                {% else %}
+                    0
+                {% endif %}
+            </div>
+            <div class="metric-label">Total Orders</div>
+            <div class="metric-change positive">
+                <i class="fas fa-arrow-up"></i> +12% from last month
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon">
+                <i class="fas fa-rupee-sign"></i>
+            </div>
+            <div class="metric-number" id="totalRevenue">
+                {% if daily_sales %}
+                    ₹{{ daily_sales|length|add:0|floatformat:0 }}
+                {% else %}
+                    ₹0
+                {% endif %}
+            </div>
+            <div class="metric-label">Total Revenue</div>
+            <div class="metric-change positive">
+                <i class="fas fa-arrow-up"></i> +18% from last month
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon">
+                <i class="fas fa-chart-bar"></i>
+            </div>
+            <div class="metric-number" id="avgOrderValue">
+                ₹{{ "1250"|floatformat:0 }}
+            </div>
+            <div class="metric-label">Avg Order Value</div>
+            <div class="metric-change positive">
+                <i class="fas fa-arrow-up"></i> +5% from last month
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon">
+                <i class="fas fa-percentage"></i>
+            </div>
+            <div class="metric-number" id="conversionRate">
+                {{ "3.2"|floatformat:1 }}%
+            </div>
+            <div class="metric-label">Conversion Rate</div>
+            <div class="metric-change negative">
+                <i class="fas fa-arrow-down"></i> -2% from last month
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Range Selector -->
+    <div class="date-range-selector">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar-alt me-2"></i>Date Range
+                </h5>
+            </div>
+            <div class="col-md-6">
+                <div class="row">
+                    <div class="col-md-5">
+                        <input type="date" class="form-control" id="startDate" onchange="updateCharts()">
+                    </div>
+                    <div class="col-md-2 text-center">
+                        <span class="text-muted">to</span>
+                    </div>
+                    <div class="col-md-5">
+                        <input type="date" class="form-control" id="endDate" onchange="updateCharts()">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="chart-grid">
+        <!-- Sales Trend Chart -->
+        <div class="chart-container">
+            <button class="refresh-btn" onclick="refreshChart('salesTrend')">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+            <div class="chart-title">Sales Trend Over Time</div>
+            {% if sales_trend_chart %}
+                <div id="salesTrendChart"></div>
+            {% else %}
+                <div class="no-data">
+                    <i class="fas fa-chart-line"></i>
+                    <h5>No Sales Data Available</h5>
+                    <p>Start making sales to see trends here</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Revenue by Products Chart -->
+        <div class="chart-container">
+            <button class="refresh-btn" onclick="refreshChart('revenue')">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+            <div class="chart-title">Top Products by Revenue</div>
+            {% if revenue_chart %}
+                <div id="revenueChart"></div>
+            {% else %}
+                <div class="no-data">
+                    <i class="fas fa-chart-bar"></i>
+                    <h5>No Revenue Data Available</h5>
+                    <p>Product sales data will appear here</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Data Tables -->
+    <div class="row">
+        <!-- Daily Sales Table -->
+        <div class="col-md-6">
+            <div class="data-table-container">
+                <div class="table-title">
+                    <i class="fas fa-calendar-day"></i>
+                    Daily Sales Summary
+                </div>
+                {% if daily_sales %}
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Orders</th>
+                                    <th>Revenue</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sale in daily_sales|slice:":10" %}
+                                <tr>
+                                    <td>{{ sale.date|date:"M d, Y" }}</td>
+                                    <td><strong>{{ sale.total_orders }}</strong></td>
+                                    <td class="revenue-amount">₹{{ sale.total_revenue|floatformat:2|default:"0.00" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="export-buttons">
+                        <a href="#" class="export-btn">
+                            <i class="fas fa-download me-1"></i>Export CSV
+                        </a>
+                        <a href="#" class="export-btn">
+                            <i class="fas fa-file-pdf me-1"></i>Export PDF
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="no-data">
+                        <i class="fas fa-table"></i>
+                        <h6>No Daily Sales Data</h6>
+                        <p>Sales data will appear here once orders are placed</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Top Products Table -->
+        <div class="col-md-6">
+            <div class="data-table-container">
+                <div class="table-title">
+                    <i class="fas fa-trophy"></i>
+                    Top Revenue Products
+                </div>
+                {% if top_revenue_products %}
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>MSKU</th>
+                                    <th>Product</th>
+                                    <th>Revenue</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in top_revenue_products %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-primary">{{ forloop.counter }}</span>
+                                    </td>
+                                    <td>
+                                        <code>{{ product.msku|truncatechars:15 }}</code>
+                                    </td>
+                                    <td>{{ product.product_name|truncatechars:25 }}</td>
+                                    <td class="revenue-amount">₹{{ product.total_revenue|floatformat:2|default:"0.00" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="export-buttons">
+                        <a href="#" class="export-btn">
+                            <i class="fas fa-download me-1"></i>Export CSV
+                        </a>
+                        <a href="#" class="export-btn">
+                            <i class="fas fa-file-excel me-1"></i>Export Excel
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="no-data">
+                        <i class="fas fa-table"></i>
+                        <h6>No Product Data</h6>
+                        <p>Top selling products will appear here</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Plotly.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.18.0/plotly.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load charts
+    loadCharts();
+    
+    // Set default date range (last 30 days)
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 30);
+    
+    document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
+    document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
+});
+
+function loadCharts() {
+    // Load Sales Trend Chart
+    {% if sales_trend_chart %}
+    const salesTrendData = {{ sales_trend_chart|safe|default:"{}" }};
+    Plotly.newPlot('salesTrendChart', salesTrendData.data, salesTrendData.layout, {
+        responsive: true,
+        displayModeBar: false
+    });
+    {% endif %}
+    
+    // Load Revenue Chart
+    {% if revenue_chart %}
+    const revenueData = {{ revenue_chart|safe|default:"{}" }};
+    Plotly.newPlot('revenueChart', revenueData.data, revenueData.layout, {
+        responsive: true,
+        displayModeBar: false
+    });
+    {% endif %}
+}
+
+function refreshData() {
+    const refreshBtn = document.querySelector('.btn-outline-light');
+    const originalText = refreshBtn.innerHTML;
+    refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Refreshing...';
+    refreshBtn.disabled = true;
+
+    setTimeout(() => {
+        location.reload();
+    }, 1000);
+}
+
+function refreshChart(chartType) {
+    const button = event.target;
+    const originalClass = button.className;
+    button.className = 'fas fa-spinner fa-spin';
+
+    setTimeout(() => {
+        button.className = originalClass;
+        console.log(`Refreshed ${chartType} chart`);
+    }, 1000);
+}
+
+function updateCharts() {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+
+    if (startDate && endDate) {
+        console.log(`Updating charts for date range: ${startDate} to ${endDate}`);
+        // Make AJAX call here in real app
+        // updateChartsAjax(startDate, endDate);
+    }
+}
+
+// Keyboard shortcut: Ctrl+R or Cmd+R to refresh
+document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+        e.preventDefault();
+        refreshData();
+    }
+});
+
+// Auto-refresh every 5 minutes
+setInterval(function() {
+    console.log('Auto-refreshing analytics data...');
+    // You can call refreshData() here if needed
+    // refreshData();
+}, 300000);
+</script>
+{% endblock %}

@@ -1,0 +1,489 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Orders Management{% endblock %}
+
+{% block extra_css %}
+<style>
+    .orders-header {
+        background: linear-gradient(135deg, #43cea2 0%, #185a9d 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+    }
+    .filter-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+    }
+    .orders-table {
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .table th {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        font-weight: 600;
+        color: #495057;
+        white-space: nowrap;
+    }
+    .table td {
+        vertical-align: middle;
+    }
+    .order-status {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+    .status-pending {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    .status-confirmed {
+        background-color: #cce5ff;
+        color: #004085;
+    }
+    .status-processing {
+        background-color: #d1ecf1;
+        color: #0c5460;
+    }
+    .status-shipped {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    .status-delivered {
+        background-color: #d1e7dd;
+        color: #0f5132;
+    }
+    .status-cancelled {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    .status-returned {
+        background-color: #e2e3e5;
+        color: #383d41;
+    }
+    .marketplace-badge {
+        padding: 0.3rem 0.6rem;
+        border-radius: 15px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    .marketplace-amazon {
+        background-color: #ff9900;
+        color: white;
+    }
+    .marketplace-flipkart {
+        background-color: #2874f0;
+        color: white;
+    }
+    .marketplace-meesho {
+        background-color: #e91e63;
+        color: white;
+    }
+    .marketplace-myntra {
+        background-color: #ff3e6c;
+        color: white;
+    }
+    .marketplace-other {
+        background-color: #6c757d;
+        color: white;
+    }
+    .order-id {
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+        font-weight: bold;
+        color: #495057;
+    }
+    .product-info {
+        max-width: 200px;
+    }
+    .product-name {
+        font-weight: 500;
+        margin-bottom: 0.25rem;
+    }
+    .product-sku {
+        font-size: 0.8rem;
+        color: #6c757d;
+        font-family: 'Courier New', monospace;
+    }
+    .price-info {
+        text-align: right;
+    }
+    .price-amount {
+        font-weight: bold;
+        color: #28a745;
+    }
+    .filter-tags {
+        margin-top: 1rem;
+    }
+    .filter-tag {
+        display: inline-block;
+        background-color: #e9ecef;
+        color: #495057;
+        padding: 0.3rem 0.8rem;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    .filter-tag .remove {
+        margin-left: 0.5rem;
+        color: #dc3545;
+        cursor: pointer;
+        text-decoration: none;
+    }
+    .no-results {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+    }
+    .no-results i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: #dee2e6;
+    }
+    .pagination-container {
+        background: white;
+        border-radius: 10px;
+        padding: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-top: 1rem;
+    }
+    .quick-stats {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    .stat-item {
+        flex: 1;
+        text-align: center;
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+    }
+    .stat-number {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 0.25rem;
+    }
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.8;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="orders-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-2">
+                    <i class="fas fa-shopping-cart me-3"></i>Orders Management
+                </h1>
+                <p class="mb-0 opacity-75">Monitor and manage customer orders across all marketplaces</p>
+            </div>
+            <div class="col-md-4">
+                <div class="quick-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">{{ page_obj.paginator.count }}</div>
+                        <div class="stat-label">Total Orders</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Filters -->
+    <div class="filter-card">
+        <form method="GET" id="filterForm">
+            <div class="row">
+                <div class="col-md-3">
+                    <label for="marketplace" class="form-label">
+                        <i class="fas fa-store me-2"></i>Marketplace
+                    </label>
+                    <select class="form-select" id="marketplace" name="marketplace">
+                        <option value="">All Marketplaces</option>
+                        {% for mp in marketplaces %}
+                            <option value="{{ mp }}" {% if current_marketplace == mp %}selected{% endif %}>
+                                {{ mp|title }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <label for="status" class="form-label">
+                        <i class="fas fa-flag me-2"></i>Status
+                    </label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">All Statuses</option>
+                        {% for st in statuses %}
+                            <option value="{{ st }}" {% if current_status == st %}selected{% endif %}>
+                                {{ st|title }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-4">
+                    <label for="search" class="form-label">
+                        <i class="fas fa-search me-2"></i>Search
+                    </label>
+                    <input 
+                        type="text" 
+                        class="form-control" 
+                        id="search" 
+                        name="search" 
+                        value="{{ search }}"
+                        placeholder="Order ID, Product Name, or SKU..."
+                    >
+                </div>
+                
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-2"></i>Filter
+                    </button>
+                </div>
+            </div>
+        </form>
+        
+        <!-- Active Filters -->
+        {% if current_marketplace or current_status or search %}
+        <div class="filter-tags">
+            <strong>Active Filters:</strong>
+            {% if current_marketplace %}
+                <span class="filter-tag">
+                    Marketplace: {{ current_marketplace|title }}
+                    <a href="?{% if current_status %}status={{ current_status }}&{% endif %}{% if search %}search={{ search }}{% endif %}" class="remove">&times;</a>
+                </span>
+            {% endif %}
+            {% if current_status %}
+                <span class="filter-tag">
+                    Status: {{ current_status|title }}
+                    <a href="?{% if current_marketplace %}marketplace={{ current_marketplace }}&{% endif %}{% if search %}search={{ search }}{% endif %}" class="remove">&times;</a>
+                </span>
+            {% endif %}
+            {% if search %}
+                <span class="filter-tag">
+                    Search: "{{ search }}"
+                    <a href="?{% if current_marketplace %}marketplace={{ current_marketplace }}&{% endif %}{% if current_status %}status={{ current_status }}{% endif %}" class="remove">&times;</a>
+                </span>
+            {% endif %}
+            <a href="{% url 'orders_view' %}" class="btn btn-sm btn-outline-secondary ms-2">
+                <i class="fas fa-times me-1"></i>Clear All
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Orders Table -->
+    <div class="orders-table">
+        {% if page_obj %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Date</th>
+                        <th>Marketplace</th>
+                        <th>Product</th>
+                        <th>Status</th>
+                        <th>Quantity</th>
+                        <th>Amount</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in page_obj %}
+                    <tr>
+                        <td>
+                            <div class="order-id">{{ order.order_id }}</div>
+                        </td>
+                        <td>
+                            <div>{{ order.order_date|date:"M d, Y" }}</div>
+                            <small class="text-muted">{{ order.order_date|time:"H:i" }}</small>
+                        </td>
+                        <td>
+                            <span class="marketplace-badge marketplace-{{ order.marketplace|lower }}">
+                                {{ order.marketplace }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="product-info">
+                                <div class="product-name">{{ order.product_name|truncatechars:30 }}</div>
+                                <div class="product-sku">SKU: {{ order.sku }}</div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="order-status status-{{ order.order_state|lower }}">
+                                {{ order.order_state }}
+                            </span>
+                        </td>
+                        <td>
+                            <strong>{{ order.quantity|default:1 }}</strong>
+                        </td>
+                        <td>
+                            <div class="price-info">
+                                <div class="price-amount">₹{{ order.total_amount|floatformat:2|default:"0.00" }}</div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="#" class="btn btn-sm btn-outline-primary" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="#" class="btn btn-sm btn-outline-success" title="Update Status">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="#" class="btn btn-sm btn-outline-info" title="Print Invoice">
+                                    <i class="fas fa-print"></i>
+                                </a>
+                                {% if order.order_state|lower == 'pending' or order.order_state|lower == 'confirmed' %}
+                                <a href="#" class="btn btn-sm btn-outline-danger" title="Cancel Order">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="no-results">
+            <i class="fas fa-shopping-cart"></i>
+            <h4>No orders found</h4>
+            <p>
+                {% if current_marketplace or current_status or search %}
+                    No orders match your current filters.
+                {% else %}
+                    No orders available.
+                {% endif %}
+            </p>
+            {% if current_marketplace or current_status or search %}
+            <a href="{% url 'orders_view' %}" class="btn btn-primary">
+                <i class="fas fa-list me-2"></i>View All Orders
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="pagination-container">
+        <nav aria-label="Orders pagination">
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if current_marketplace %}&marketplace={{ current_marketplace }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if search %}&search={{ search }}{% endif %}">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if current_marketplace %}&marketplace={{ current_marketplace }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if search %}&search={{ search }}{% endif %}">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if current_marketplace %}&marketplace={{ current_marketplace }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if search %}&search={{ search }}{% endif %}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if current_marketplace %}&marketplace={{ current_marketplace }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if search %}&search={{ search }}{% endif %}">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if current_marketplace %}&marketplace={{ current_marketplace }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if search %}&search={{ search }}{% endif %}">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        
+        <div class="text-center mt-3 text-muted">
+            <small>
+                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} orders
+            </small>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-submit form on filter changes
+    const filterForm = document.getElementById('filterForm');
+    const marketplaceSelect = document.getElementById('marketplace');
+    const statusSelect = document.getElementById('status');
+    const searchInput = document.getElementById('search');
+    
+    // Auto-submit on select changes
+    marketplaceSelect.addEventListener('change', function() {
+        filterForm.submit();
+    });
+    
+    statusSelect.addEventListener('change', function() {
+        filterForm.submit();
+    });
+    
+    // Auto-submit search with debounce
+    let searchTimeout = null;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function() {
+            if (searchInput.value.length > 2 || searchInput.value.length === 0) {
+                filterForm.submit();
+            }
+        }, 700);
+    });
+    
+    // Add tooltips to action buttons
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Focus search with Ctrl+F or Cmd+F
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+            e.preventDefault();
+            searchInput.focus();
+        }
+        
+        // Clear filters with Escape
+        if (e.key === 'Escape' && (marketplaceSelect.value || statusSelect.value || searchInput.value)) {
+            window.location.href = '{% url "orders_view" %}';
+        }
+    });
+});
+</script>
+{% endblock %}

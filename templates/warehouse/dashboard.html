@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warehouse Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+
+        .dashboard-header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px 40px;
+            text-align: center;
+        }
+
+        .dashboard-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .dashboard-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .dashboard-content {
+            padding: 40px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #3498db, #9b59b6);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #3498db, #9b59b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .tables-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .table-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .data-table th {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            color: #2c3e50;
+            font-weight: 600;
+            padding: 15px 12px;
+            text-align: left;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .data-table td {
+            padding: 12px;
+            border-bottom: 1px solid #f1f3f4;
+            color: #495057;
+        }
+
+        .data-table tbody tr:hover {
+            background-color: #f8f9fa;
+            transition: background-color 0.2s ease;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-primary {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .badge-success {
+            background: linear-gradient(135deg, #27ae60, #229954);
+            color: white;
+        }
+
+        .badge-warning {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+        }
+
+        .no-data {
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+            padding: 40px;
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 300px;
+            color: #7f8c8d;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-content {
+                padding: 20px;
+            }
+            
+            .dashboard-title {
+                font-size: 2rem;
+            }
+            
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .tables-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stat-card {
+                padding: 20px;
+            }
+        }
+
+        .refresh-btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-left: auto;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">
+                <i class="fas fa-warehouse"></i>
+                Warehouse Dashboard
+            </h1>
+            <p class="dashboard-subtitle">Real-time inventory and sales analytics</p>
+        </div>
+
+        <div class="dashboard-content">
+            <!-- Summary Statistics -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="stat-value">{{ total_products|default:0 }}</div>
+                    <div class="stat-label">Total Products</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <div class="stat-value">{{ total_orders|default:0 }}</div>
+                    <div class="stat-label">Total Orders</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-cubes"></i>
+                    </div>
+                    <div class="stat-value">{{ total_stock|default:0 }}</div>
+                    <div class="stat-label">Total Stock</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-value">{{ unmapped_skus|default:0 }}</div>
+                    <div class="stat-label">Unmapped SKUs</div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-grid">
+                <!-- Top Products Chart -->
+                <div class="chart-container">
+                    <h3 class="chart-title">
+                        <i class="fas fa-chart-bar"></i>
+                        Top 5 Products by Sales
+                    </h3>
+                    {% if charts.top_products %}
+                        <div id="top-products-chart"></div>
+                    {% else %}
+                        <div class="no-data">
+                            <i class="fas fa-chart-bar" style="font-size: 3rem; margin-bottom: 15px; color: #bdc3c7;"></i>
+                            <p>No product data available</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Marketplace Distribution Chart -->
+                <div class="chart-container">
+                    <h3 class="chart-title">
+                        <i class="fas fa-chart-pie"></i>
+                        Orders by Marketplace
+                    </h3>
+                    {% if charts.marketplace %}
+                        <div id="marketplace-chart"></div>
+                    {% else %}
+                        <div class="no-data">
+                            <i class="fas fa-chart-pie" style="font-size: 3rem; margin-bottom: 15px; color: #bdc3c7;"></i>
+                            <p>No marketplace data available</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Tables Section -->
+            <div class="tables-grid">
+                <!-- Recent Orders -->
+                <div class="table-container">
+                    <h3 class="table-title">
+                        <i class="fas fa-clock"></i>
+                        Recent Orders
+                        <button class="refresh-btn" onclick="location.reload()">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </h3>
+                    {% if recent_orders %}
+                        <div style="overflow-x: auto;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Product</th>
+                                        <th>Marketplace</th>
+                                        <th>Quantity</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in recent_orders %}
+                                    <tr>
+                                        <td><span class="badge badge-primary">#{{ order.id }}</span></td>
+                                        <td>{{ order.product_name|default:"N/A"|truncatechars:30 }}</td>
+                                        <td>
+                                            <span class="badge badge-success">
+                                                {{ order.marketplace|default:"Unknown"|title }}
+                                            </span>
+                                        </td>
+                                        <td>{{ order.quantity|default:0 }}</td>
+                                        <td>{{ order.created_at|date:"M d, Y" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="no-data">
+                            <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 15px; color: #bdc3c7;"></i>
+                            <p>No recent orders found</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Top Products Table -->
+                <div class="table-container">
+                    <h3 class="table-title">
+                        <i class="fas fa-trophy"></i>
+                        Top Selling Products
+                    </h3>
+                    {% if top_products %}
+                        <div style="overflow-x: auto;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>MSKU</th>
+                                        <th>Product Name</th>
+                                        <th>Total Sold</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for product in top_products %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge badge-warning">#{{ forloop.counter }}</span>
+                                        </td>
+                                        <td>{{ product.msku|default:"N/A" }}</td>
+                                        <td>{{ product.product_name|default:"N/A"|truncatechars:40 }}</td>
+                                        <td><strong>{{ product.total_sold|default:0 }}</strong></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="no-data">
+                            <i class="fas fa-medal" style="font-size: 3rem; margin-bottom: 15px; color: #bdc3c7;"></i>
+                            <p>No product sales data available</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize charts when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Top Products Chart
+            {% if charts.top_products %}
+                const topProductsData = {{ charts.top_products|safe }};
+                Plotly.newPlot('top-products-chart', topProductsData.data, topProductsData.layout, {
+                    responsive: true,
+                    displayModeBar: false
+                });
+            {% endif %}
+
+            // Marketplace Chart
+            {% if charts.marketplace %}
+                const marketplaceData = {{ charts.marketplace|safe }};
+                Plotly.newPlot('marketplace-chart', marketplaceData.data, marketplaceData.layout, {
+                    responsive: true,
+                    displayModeBar: false
+                });
+            {% endif %}
+        });
+
+        // Auto-refresh every 5 minutes
+        setInterval(function() {
+            location.reload();
+        }, 300000);
+
+        // Add loading animation for charts
+        function showLoading(elementId) {
+            document.getElementById(elementId).innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Inventory Management{% endblock %}
+
+{% block extra_css %}
+<style>
+    .inventory-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+    }
+    .stats-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        border-left: 4px solid #667eea;
+    }
+    .stats-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #667eea;
+    }
+    .stats-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+    }
+    .search-container {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+    }
+    .inventory-table {
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .table th {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        font-weight: 600;
+        color: #495057;
+    }
+    .stock-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    .stock-high {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    .stock-medium {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    .stock-low {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    .stock-out {
+        background-color: #f5c6cb;
+        color: #721c24;
+        font-weight: bold;
+    }
+    .pagination-container {
+        background: white;
+        border-radius: 10px;
+        padding: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-top: 1rem;
+    }
+    .warehouse-tag {
+        display: inline-block;
+        background-color: #e9ecef;
+        color: #495057;
+        padding: 0.2rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        margin: 0.1rem;
+    }
+    .no-results {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+    }
+    .no-results i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: #dee2e6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="inventory-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-2">
+                    <i class="fas fa-boxes me-3"></i>Inventory Management
+                </h1>
+                <p class="mb-0 opacity-75">Monitor and manage your warehouse inventory</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="stats-card">
+                <div class="stats-number">{{ total_products }}</div>
+                <div class="stats-label">Total Products</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="stats-card">
+                <div class="stats-number">{{ total_stock|floatformat:0 }}</div>
+                <div class="stats-label">Total Stock Units</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Form -->
+    <div class="search-container">
+        <form method="GET" class="row align-items-end">
+            <div class="col-md-10">
+                <label for="search" class="form-label">
+                    <i class="fas fa-search me-2"></i>Search Products
+                </label>
+                <input 
+                    type="text" 
+                    class="form-control" 
+                    id="search" 
+                    name="search" 
+                    value="{{ search }}"
+                    placeholder="Search by MSKU or product name..."
+                >
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search me-2"></i>Search
+                </button>
+            </div>
+        </form>
+        {% if search %}
+        <div class="mt-3">
+            <span class="badge bg-info">
+                Searching for: "{{ search }}"
+            </span>
+            <a href="{% url 'inventory_view' %}" class="btn btn-sm btn-outline-secondary ms-2">
+                <i class="fas fa-times me-1"></i>Clear
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Inventory Table -->
+    <div class="inventory-table">
+        {% if page_obj %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>MSKU</th>
+                        <th>Product Name</th>
+                        <th>Warehouses</th>
+                        <th>Stock Status</th>
+                        <th>Total Stock</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in page_obj %}
+                    <tr>
+                        <td>
+                            <strong>{{ product.msku }}</strong>
+                        </td>
+                        <td>{{ product.product_name }}</td>
+                        <td>
+                            {% for stock in product.productstock_set.all %}
+                                <div class="warehouse-tag">
+                                    {{ stock.warehouse.name }}
+                                </div>
+                            {% empty %}
+                                <span class="text-muted">No warehouses</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% with total_stock=product.productstock_set.all|length %}
+                                {% if total_stock == 0 %}
+                                    <span class="stock-badge stock-out">Out of Stock</span>
+                                {% else %}
+                                    {% with stock_sum=product.productstock_set.all.0.stock_quantity|default:0 %}
+                                        {% for stock in product.productstock_set.all %}
+                                            {% if not forloop.first %}
+                                                {% with stock_sum=stock_sum|add:stock.stock_quantity %}{% endwith %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {% if stock_sum > 50 %}
+                                            <span class="stock-badge stock-high">High Stock</span>
+                                        {% elif stock_sum > 10 %}
+                                            <span class="stock-badge stock-medium">Medium Stock</span>
+                                        {% elif stock_sum > 0 %}
+                                            <span class="stock-badge stock-low">Low Stock</span>
+                                        {% else %}
+                                            <span class="stock-badge stock-out">Out of Stock</span>
+                                        {% endif %}
+                                    {% endwith %}
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td>
+                            <strong>
+                                {% with total=0 %}
+                                    {% for stock in product.productstock_set.all %}
+                                        {% with total=total|add:stock.stock_quantity %}{% endwith %}
+                                    {% endfor %}
+                                    {{ total|default:0 }}
+                                {% endwith %}
+                            </strong>
+                            units
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="#" class="btn btn-sm btn-outline-primary" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="#" class="btn btn-sm btn-outline-success" title="Update Stock">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="#" class="btn btn-sm btn-outline-info" title="Stock History">
+                                    <i class="fas fa-history"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="no-results">
+            <i class="fas fa-search"></i>
+            <h4>No products found</h4>
+            <p>{% if search %}No products match your search criteria.{% else %}No products available in inventory.{% endif %}</p>
+            {% if search %}
+            <a href="{% url 'inventory_view' %}" class="btn btn-primary">
+                <i class="fas fa-list me-2"></i>View All Products
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="pagination-container">
+        <nav aria-label="Inventory pagination">
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if search %}&search={{ search }}{% endif %}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        
+        <div class="text-center mt-3 text-muted">
+            <small>
+                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} products
+            </small>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-submit search after typing (with debounce)
+    const searchInput = document.getElementById('search');
+    let timeout = null;
+    
+    searchInput.addEventListener('input', function() {
+        clearTimeout(timeout);
+        timeout = setTimeout(function() {
+            if (searchInput.value.length > 2 || searchInput.value.length === 0) {
+                searchInput.closest('form').submit();
+            }
+        }, 500);
+    });
+    
+    // Add tooltip to action buttons
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Data - Warehouse Management</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .upload-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+
+        .upload-header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px 40px;
+            text-align: center;
+        }
+
+        .upload-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .upload-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .upload-content {
+            padding: 40px;
+        }
+
+        .navigation {
+            margin-bottom: 30px;
+        }
+
+        .nav-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 10px 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            background: rgba(52, 152, 219, 0.1);
+        }
+
+        .nav-link:hover {
+            background: rgba(52, 152, 219, 0.2);
+            transform: translateX(-5px);
+        }
+
+        .upload-form {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .form-group {
+            margin-bottom: 30px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .form-help {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+        }
+
+        .file-upload-area {
+            position: relative;
+            border: 3px dashed #bdc3c7;
+            border-radius: 15px;
+            padding: 60px 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: #fafbfc;
+            cursor: pointer;
+        }
+
+        .file-upload-area:hover {
+            border-color: #3498db;
+            background: rgba(52, 152, 219, 0.05);
+        }
+
+        .file-upload-area.dragover {
+            border-color: #2ecc71;
+            background: rgba(46, 204, 113, 0.1);
+            transform: scale(1.02);
+        }
+
+        .file-upload-icon {
+            font-size: 4rem;
+            color: #bdc3c7;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-area:hover .file-upload-icon {
+            color: #3498db;
+            transform: scale(1.1);
+        }
+
+        .file-upload-text {
+            font-size: 1.2rem;
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .file-upload-subtext {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .file-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        /* Hide the Django form field */
+        .django-file-field {
+            display: none;
+        }
+
+        .file-selected {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(46, 204, 113, 0.1);
+            border-radius: 10px;
+            border-left: 4px solid #2ecc71;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #27ae60;
+            font-weight: 600;
+        }
+
+        .remove-file {
+            background: none;
+            border: none;
+            color: #e74c3c;
+            cursor: pointer;
+            padding: 5px;
+            margin-left: auto;
+            border-radius: 3px;
+            transition: background-color 0.3s ease;
+        }
+
+        .remove-file:hover {
+            background: rgba(231, 76, 60, 0.1);
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 1rem;
+            background: white;
+            transition: all 0.3s ease;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 12px center;
+            background-repeat: no-repeat;
+            background-size: 16px;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0 auto;
+            min-width: 200px;
+            justify-content: center;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(46, 204, 113, 0.3);
+        }
+
+        .submit-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .submit-btn .spinner {
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        .submit-btn.loading .spinner {
+            display: inline-block;
+        }
+
+        .submit-btn.loading .submit-text {
+            display: none;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .supported-formats {
+            background: rgba(52, 152, 219, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+
+        .supported-formats h4 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .format-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .format-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .format-icon {
+            font-size: 1.5rem;
+            color: #3498db;
+        }
+
+        .messages {
+            margin-bottom: 30px;
+        }
+
+        .message {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+        }
+
+        .message.success {
+            background: rgba(46, 204, 113, 0.1);
+            border-left: 4px solid #2ecc71;
+            color: #27ae60;
+        }
+
+        .message.error {
+            background: rgba(231, 76, 60, 0.1);
+            border-left: 4px solid #e74c3c;
+            color: #c0392b;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #f1f3f4;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .upload-content {
+                padding: 20px;
+            }
+            
+            .upload-form {
+                padding: 25px;
+            }
+            
+            .upload-title {
+                font-size: 2rem;
+            }
+            
+            .file-upload-area {
+                padding: 40px 20px;
+            }
+            
+            .format-list {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="upload-container">
+        <div class="upload-header">
+            <h1 class="upload-title">
+                <i class="fas fa-cloud-upload-alt"></i>
+                Upload Data
+            </h1>
+            <p class="upload-subtitle">Import your warehouse data files</p>
+        </div>
+
+        <div class="upload-content">
+            <!-- Navigation -->
+            <div class="navigation">
+                <a href="{% url 'dashboard' %}" class="nav-link">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Dashboard
+                </a>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                        <div class="message {{ message.tags }}">
+                            {% if message.tags == 'success' %}
+                                <i class="fas fa-check-circle"></i>
+                            {% elif message.tags == 'error' %}
+                                <i class="fas fa-exclamation-circle"></i>
+                            {% else %}
+                                <i class="fas fa-info-circle"></i>
+                            {% endif %}
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Upload Form -->
+            <form method="post" enctype="multipart/form-data" class="upload-form" id="uploadForm">
+                {% csrf_token %}
+                
+                <!-- Hide the Django form field and use custom styling -->
+                <div class="django-file-field">
+                    {{ form.file }}
+                </div>
+                
+                <!-- File Upload Area -->
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-file"></i>
+                        Select File
+                    </label>
+                    <p class="form-help">Choose a file to upload. Drag and drop or click to browse.</p>
+                    
+                    <div class="file-upload-area" id="fileUploadArea">
+                        <div class="file-upload-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <div class="file-upload-text">Drop your file here or click to browse</div>
+                        <div class="file-upload-subtext">Maximum file size: 50MB</div>
+                        <input type="file" class="file-input" id="fileInput" accept=".csv,.xlsx,.xls,.json" required>
+                        
+                        <div class="file-selected" id="fileSelected" style="display: none;">
+                            <div class="file-info">
+                                <i class="fas fa-file-check"></i>
+                                <span id="fileName"></span>
+                                <button type="button" class="remove-file" onclick="removeFile()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data Format Selection -->
+                <div class="form-group">
+                    <label class="form-label" for="id_data_format">
+                        <i class="fas fa-cog"></i>
+                        Data Format
+                    </label>
+                    <p class="form-help">Select the type of data you're uploading</p>
+                    {{ form.data_format }}
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    <i class="fas fa-upload submit-icon"></i>
+                    <i class="fas fa-spinner spinner"></i>
+                    <span class="submit-text">Upload and Process</span>
+                </button>
+            </form>
+
+            <!-- Supported Formats -->
+            <div class="supported-formats">
+                <h4>
+                    <i class="fas fa-info-circle"></i>
+                    Supported File Formats
+                </h4>
+                <div class="format-list">
+                    <div class="format-item">
+                        <i class="fas fa-file-csv format-icon"></i>
+                        <div>
+                            <strong>CSV Files</strong>
+                            <div style="font-size: 0.8rem; color: #7f8c8d;">Comma-separated values</div>
+                        </div>
+                    </div>
+                    <div class="format-item">
+                        <i class="fas fa-file-excel format-icon"></i>
+                        <div>
+                            <strong>Excel Files</strong>
+                            <div style="font-size: 0.8rem; color: #7f8c8d;">.xlsx, .xls formats</div>
+                        </div>
+                    </div>
+                    <div class="format-item">
+                        <i class="fas fa-file-code format-icon"></i>
+                        <div>
+                            <strong>JSON Files</strong>
+                            <div style="font-size: 0.8rem; color: #7f8c8d;">JavaScript Object Notation</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileUploadArea = document.getElementById('fileUploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const djangoFileInput = document.querySelector('input[name="file"]'); // Django form field
+            const fileSelected = document.getElementById('fileSelected');
+            const fileName = document.getElementById('fileName');
+            const uploadForm = document.getElementById('uploadForm');
+            const submitBtn = document.getElementById('submitBtn');
+            const progressBar = document.getElementById('progressBar');
+            const progressFill = document.getElementById('progressFill');
+
+            // Drag and drop functionality
+            fileUploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                fileUploadArea.classList.add('dragover');
+            });
+
+            fileUploadArea.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                fileUploadArea.classList.remove('dragover');
+            });
+
+            fileUploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                fileUploadArea.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFileSelection(files[0]);
+                }
+            });
+
+            // File input change
+            fileInput.addEventListener('change', function(e) {
+                if (e.target.files.length > 0) {
+                    handleFileSelection(e.target.files[0]);
+                }
+            });
+
+            // Handle file selection
+            function handleFileSelection(file) {
+                // Validate file size (50MB limit)
+                if (file.size > 50 * 1024 * 1024) {
+                    alert('File size exceeds 50MB limit. Please choose a smaller file.');
+                    return;
+                }
+
+                // Validate file type
+                const allowedTypes = ['.csv', '.xlsx', '.xls', '.json'];
+                const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+                if (!allowedTypes.includes(fileExtension)) {
+                    alert('Please select a valid file format (CSV, Excel, or JSON).');
+                    return;
+                }
+
+                // Create a FileList-like object and assign to Django form field
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                djangoFileInput.files = dt.files;
+                fileInput.files = dt.files;
+
+                fileName.textContent = file.name + ' (' + formatFileSize(file.size) + ')';
+                fileSelected.style.display = 'block';
+                submitBtn.disabled = false;
+            }
+
+            // Remove file
+            window.removeFile = function() {
+                fileInput.value = '';
+                djangoFileInput.value = '';
+                fileSelected.style.display = 'none';
+                submitBtn.disabled = true;
+            };
+
+            // Format file size
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            // Form submission
+            uploadForm.addEventListener('submit', function(e) {
+                if (!djangoFileInput.files.length) {
+                    e.preventDefault();
+                    alert('Please select a file to upload.');
+                    return;
+                }
+
+                // Show loading state
+                submitBtn.classList.add('loading');
+                submitBtn.disabled = true;
+                progressBar.style.display = 'block';
+
+                // Simulate progress (since we can't track real upload progress easily)
+                let progress = 0;
+                const progressInterval = setInterval(function() {
+                    progress += Math.random() * 15;
+                    if (progress > 90) progress = 90;
+                    progressFill.style.width = progress + '%';
+                }, 200);
+
+                // Clean up on form completion (this would normally be handled by the server response)
+                setTimeout(function() {
+                    clearInterval(progressInterval);
+                    progressFill.style.width = '100%';
+                }, 3000);
+            });
+
+            // Add form validation styles
+            const formElements = document.querySelectorAll('.form-select');
+            formElements.forEach(element => {
+                element.addEventListener('focus', function() {
+                    this.style.borderColor = '#3498db';
+                });
+                
+                element.addEventListener('blur', function() {
+                    this.style.borderColor = '#e9ecef';
+                });
+            });
+
+            // Initial state
+            submitBtn.disabled = true;
+        });
+    </script>
+</body>
+</html>

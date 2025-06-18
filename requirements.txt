@@ -1,0 +1,15 @@
+Django
+pandas
+numpy
+plotly
+django-crispy-forms
+crispy-bootstrap5
+django-extensions
+python-decouple
+requests
+openpyxl
+xlrd
+transformers
+# torch
+sentence-transformers
+sqlparse
